@@ -2,7 +2,7 @@
 It converts svgs to favicons.
 
 ## Usage
-`docker run --rm -it -v $(pwd):/app/icons akpwebdesign/davicon [options] <SVG file>`
+`docker run --rm -it -v $(pwd):/app/icons akpwebdesign/davicon [options] <image>`
 
 ## Options
 ```

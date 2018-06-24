@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -56,7 +56,7 @@ done
 
 if [ "$HELP" -eq "1" ]; then
   echo -e "${GREEN}Davicon!${CLEAR}"
-  echo "Usage: docker run --rm -it -v \$(pwd):/app/icons akpwebdesign/davicon [options] <SVG file>"
+  echo "Usage: docker run --rm -it -v \$(pwd):/app/icons akpwebdesign/davicon [options] <image>"
   echo "Options:"
   echo "  --sizes, -s: Set the output size list. Default: \"16,32,48,57,64,70,72,114,120,144,150,152,256,310,512\""
   echo "  --favicon-sizes, -f: Set the favicon output size list. Default: \"16,32,64,128,256\""
@@ -75,21 +75,50 @@ if [[ $# -ne 1 ]]; then
     exit 1
 fi
 
-for size in $(echo $SIZES | sed "s/,/ /g")
-do
-  echo "Creating favicon-$size.png..."
-  inkscape -z -e "/app/icons/favicon-$size.png" -w $size -h $size /app/icons/$1 > /dev/null 2>&1
-done
+convert_svg() {
+  inkscape -z -e "$3/favicon-$1.png" -w $1 -h $1 /app/icons/$2 > /dev/null 2>&1
+}
 
-mkdir /app/temp
-FILES=""
+convert_non_svg() {
+  convert -resize $1x$1 /app/icons/$2 "$3/favicon-$1.png"
+}
 
-echo "Creating favicon.ico"
-for size in $(echo $FAVICONSIZES | sed "s/,/ /g")
-do
-  inkscape -z -e "/app/temp/$size.png" -w $size -h $size /app/icons/$1 > /dev/null 2>&1
-  FILES="/app/temp/$size.png $FILES"
-done
+if [[ "$1" == *svg ]]
+then
+  for size in $(echo $SIZES | sed "s/,/ /g")
+  do
+    echo "Creating favicon-$size.png..."
+    convert_svg $size $1 /app/icons
+  done
+
+  mkdir /app/temp
+  FILES=""
+
+  echo "Creating favicon.ico"
+  for size in $(echo $FAVICONSIZES | sed "s/,/ /g")
+  do
+    convert_svg $size $1 /app/temp
+    FILES="/app/temp/favicon-$size.png $FILES"
+  done
+else
+  for size in $(echo $SIZES | sed "s/,/ /g")
+  do
+    echo "Creating favicon-$size.png..."
+    convert_non_svg $size $1 /app/icons
+  done
+
+  mkdir /app/temp
+  FILES=""
+
+  echo "Creating favicon.ico"
+  for size in $(echo $FAVICONSIZES | sed "s/,/ /g")
+  do
+    convert_non_svg $size $1 /app/temp
+    FILES="/app/temp/favicon-$size.png $FILES"
+  done
+fi
+
+
 
 convert $FILES -colors 256 -background transparent /app/icons/favicon.ico > /dev/null
 
